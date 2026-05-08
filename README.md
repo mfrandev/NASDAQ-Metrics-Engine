@@ -54,7 +54,7 @@ LiveOutput/
 
 ## Building
 
-Requires a C++20 compiler and CMake 3.15+. External dependencies are included as git submodules.
+Requires x86 architecture, a C++20 compiler, and CMake 3.15+. External dependencies are included as git submodules.
 
 ```bash
 git submodule update --init --recursive
