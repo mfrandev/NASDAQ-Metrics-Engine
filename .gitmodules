@@ -7,3 +7,6 @@
 [submodule "lib/unordered_dense"]
 	path = lib/unordered_dense
 	url = https://github.com/martinus/unordered_dense
+[submodule "lib/CLI11"]
+	path = lib/CLI11
+	url = git@github.com:CLIUtils/CLI11.git
