@@ -377,6 +377,10 @@ class ShardConsumer {
             if(!pin_to_core(run_on_this_core)) {
                 consumerLogger -> warn("Failed to pin consumer {} to core {}", consumerNum, run_on_this_core);
             }
+            else
+            {
+                consumerLogger -> info("Pinned consumer {} to core {}", consumerNum, run_on_this_core);
+            }
 #else
 
 #endif

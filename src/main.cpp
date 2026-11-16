@@ -40,6 +40,10 @@ int main(int argc, char* argv[]) {
     if(!pin_to_core(readerThreadCore)) {
         consoleLogger -> info("Failed to pin reader thread to core {}", readerThreadCore);
     }
+    else
+    {
+        consoleLogger -> info ("Pinned reader to core {}", readerThreadCore);
+    }
 #else
     consoleLogger -> warn("NON-LINUX BUILDS CANNOT PIN THREADS");
 #endif
@@ -101,7 +105,7 @@ int main(int argc, char* argv[]) {
         // consoleLogger->info("Reader dispatched {} messages", counter);
         auto end = std::chrono::system_clock::now();
         // Convert nanos to seconds
-        consoleLogger -> info("======== Total Order Book Management Time: {} seconds ========", static_cast<double>(std::chrono::duration_cast<std::chrono::seconds>(end - start).count()));
+        consoleLogger -> info("======== Total Execution Time: {} seconds ========", static_cast<double>(std::chrono::duration_cast<std::chrono::seconds>(end - start).count()));
         consoleLogger->info("Joining Consumers..."); 
         shardManager -> shutDownConsumers();    
         consoleLogger->info("Consumers joined");  
