@@ -5,9 +5,6 @@
 
 #include <cliargs.h>
 
-#include <spdlog/spdlog.h>
-#include <spdlog/sinks/stdout_color_sinks.h>
-
 #include <CLI11.hpp>
 #include <memory>
 
@@ -16,15 +13,17 @@
 
 #include <ShardManager.hpp>
 
-const std::string& CONSOLE_LOGGER("console");
+#include <logger_utils.hpp>
 
 /**
  * Parse and calculate a VWAP for a binary NASDAQ ITCH 5.0 file
  */
 int main(int argc, char* argv[]) {
+    
+    const std::string& MAIN = "main";
 
     // Initialize the console logger
-    auto consoleLogger = spdlog::stdout_color_mt(CONSOLE_LOGGER);
+    auto consoleLogger = Logger::getLogger(MAIN);
 
     std::string filepath("../../ITCHFiles/01302019.NASDAQ_ITCH50");
     
@@ -36,10 +35,14 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+#ifdef __linux__
     constexpr int readerThreadCore = 2;
     if(!pin_to_core(readerThreadCore)) {
         consoleLogger -> info("Failed to pin reader thread to core {}", readerThreadCore);
     }
+#else
+    consoleLogger -> warn("NON-LINUX BUILDS CANNOT PIN THREADS");
+#endif
 
     // Parse CLI args here
     CLIArgs cliArgs;

@@ -1,7 +1,6 @@
 #ifndef SHARD_CONSUMER_H_
 #define SHARD_CONSUMER_H_
 
-#include <immintrin.h> // For _mm_pause
 #include <thread>
 #include <condition_variable>
 #include <memory>
@@ -9,6 +8,7 @@
 
 #include <ThreadConstants.h>
 #include <thread_utils.hpp>
+#include <logger_utils.hpp>
 #include <time_utils.hpp>
 #include <queue_wrapper.h>
 #include <Message.hpp>
@@ -83,23 +83,6 @@ using Locates = ankerl::unordered_dense::map<std::string, uint16_t>;
 class ShardConsumer {
 
     private:
-
-        void backoff() {
-            // Step 1: Busy wait
-            for(auto i = 0; i < ThreadConstants::BUSY_WAIT_CYCLES; ++i) {
-                _mm_pause();
-                if(!(*_queue).buffer.empty()) return;
-            }
-            
-            // Step 2: thread yield
-            for(auto i = 0; i < ThreadConstants::YIELD_CYCLES; ++i) {
-                std::this_thread::yield();
-                if(!(*_queue).buffer.empty()) return;
-            }
-
-            // Step 3: Condvar sleep 
-            // _cv.wait();
-        }
 
         MessageBody parseMessage(const char messageType, const uint16_t stockLocate, const char buffer[MAX_BUFFER_SIZE]) {
             switch (messageType) {
@@ -379,6 +362,7 @@ class ShardConsumer {
         Symbols* _symbols = nullptr;
         Locates* _locates = nullptr;
         SystemEventSequence* _systemEventSequenceTracker = nullptr;
+        std::shared_ptr<spdlog::logger> consumerLogger;
 
     public:
 
@@ -386,11 +370,16 @@ class ShardConsumer {
 
         void run(queue_type& queue, int run_on_this_core, LocateIndexedPerStockState& locateIndexedPerStockState, Symbols& symbols, Locates& locates, SystemEventSequence& systemEventSequenceTracker) {
 
-            std::cout << "Pinned consumer " << (((run_on_this_core-ThreadConstants::FIRST_CONSUMER_CORE)/2)+1) << " to core " << run_on_this_core << std::endl;
-    
+            auto consumerNum = ((run_on_this_core-ThreadConstants::FIRST_CONSUMER_CORE)/2)+1;
+            consumerLogger = Logger::getLogger("Consumer " + std::to_string(consumerNum));
+
+#ifdef __linux__
             if(!pin_to_core(run_on_this_core)) {
-                std::cout << "Failed to pin consumer " << (((run_on_this_core-ThreadConstants::FIRST_CONSUMER_CORE)/2)+1) << " to core " << run_on_this_core << std::endl;
+                consumerLogger -> warn("Failed to pin consumer {} to core {}", consumerNum, run_on_this_core);
             }
+#else
+
+#endif
             
             // Set shard level data structure objects
             {
@@ -409,7 +398,6 @@ class ShardConsumer {
                     MessageBody msgBody = parseMessage(bmsg.header.messageType, bmsg.header.stockLocate, bmsg.buffer);
                     processMessage(Message{bmsg.seq, bmsg.header, msgBody});
                 } else {
-                    // backoff();
                     std::this_thread::yield();
                 }
             } 

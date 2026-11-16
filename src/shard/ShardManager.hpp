@@ -22,6 +22,7 @@
 #include <message_utils.hpp>
 #include <string_utils.hpp>
 #include <time_utils.hpp>
+#include <logger_utils.hpp>
 
 #include <ProcessSystemEvent.hpp>
 
@@ -31,9 +32,10 @@ template<uint8_t numberOfShards, uint32_t shardSize>
 class ShardManager {
 
     public:
-    ShardManager() : 
-        _queues(make_queues(std::make_index_sequence<numberOfShards>{})), 
-        coreIndex(ThreadConstants::FIRST_CONSUMER_CORE)
+    ShardManager() 
+        : _queues(make_queues(std::make_index_sequence<numberOfShards>{}))
+        ,coreIndex(ThreadConstants::FIRST_CONSUMER_CORE)
+        , sharedManagerLogger(Logger::getLogger(SHARED_MANAGER))
         {
             _locates.reserve(16'000UL);
         }
@@ -120,20 +122,20 @@ class ShardManager {
         const int FAIL = -1;
         const uint64_t INTERVAL = static_cast<uint64_t>(NMINUTES) * VWAPConstants::NANOSECOND_PER_MINUTE;
 
-        std::cout << "Outputting last " << NMINUTES << " minutes vwap at " << toTimeString(now, ':') << std::endl;
+        sharedManagerLogger -> info("Outputting last {} minutes vwap at {}", NMINUTES, toTimeString(now, ':'));
 
         std::filesystem::path outputDir{"../../LiveOutput/vwap"};
         std::error_code ec;
         std::filesystem::create_directories(outputDir, ec);
         if(ec) {
-            std::cerr << "Failed to ensure VWAP output directory exists: " << ec.message() << '\n';
+            sharedManagerLogger -> error("Failed to ensure VWAP output directory exists: {}", ec.message());
             return;
         }
 
         auto filename = std::string("vwap_") + toTimeString(now, '_') + ".csv";
         std::ofstream output(outputDir / filename, std::ios::out | std::ios::trunc);
         if(!output.is_open()) {
-            std::cerr << "Failed to open VWAP output file: " << filename << '\n';
+            sharedManagerLogger -> error("Failed to open VWAP output file: {}", filename);
             return;
         }
 
@@ -164,20 +166,20 @@ class ShardManager {
         const int FAIL = -1;
         const uint64_t INTERVAL = static_cast<uint64_t>(NMINUTES) * TWAPConstants::NANOSECOND_PER_MINUTE;
 
-        std::cout << "Outputting last " << NMINUTES << " minutes twap at " << toTimeString(now, ':') << std::endl;
+        sharedManagerLogger -> info("Outputting last {} minutes twap at {}", NMINUTES, toTimeString(now, ':'));
 
         std::filesystem::path outputDir{"../../LiveOutput/twap"};
         std::error_code ec;
         std::filesystem::create_directories(outputDir, ec);
         if(ec) {
-            std::cerr << "Failed to ensure TWAP output directory exists: " << ec.message() << '\n';
+            sharedManagerLogger -> error("Failed to ensure TWAP output directory exists: {}", ec.message());
             return;
         }
 
         auto filename = std::string("twap_") + toTimeString(now, '_') + ".csv";
         std::ofstream output(outputDir / filename, std::ios::out | std::ios::trunc);
         if(!output.is_open()) {
-            std::cerr << "Failed to open TWAP output file: " << filename << '\n';
+            sharedManagerLogger -> error("Failed to open TWAP output file: {}", filename);
             return;
         }
 
@@ -207,20 +209,20 @@ class ShardManager {
         const int FAIL = -1;
         const uint64_t INTERVAL = static_cast<uint64_t>(NMINUTES) * PerStockRVConstants::NANOSECOND_PER_MINUTE;
 
-        std::cout << "Outputting last " << NMINUTES << " minutes realized variance at " << toTimeString(now, ':') << std::endl;
+        sharedManagerLogger -> info("Outputting last {} minutes realized variance at {}", NMINUTES, toTimeString(now, ':'));
 
         std::filesystem::path outputDir{"../../LiveOutput/rv"};
         std::error_code ec;
         std::filesystem::create_directories(outputDir, ec);
         if(ec) {
-            std::cerr << "Failed to ensure RV output directory exists: " << ec.message() << '\n';
+            sharedManagerLogger -> error("Failed to ensure RV output directory exists: {}", ec.message());
             return;
         }
 
         auto filename = std::string("rv_") + toTimeString(now, '_') + ".csv";
         std::ofstream output(outputDir / filename, std::ios::out | std::ios::trunc);
         if(!output.is_open()) {
-            std::cerr << "Failed to open RV output file: " << filename << '\n';
+            sharedManagerLogger -> error("Failed to open RV output file: {}", filename);
             return;
         }
 
@@ -265,6 +267,9 @@ class ShardManager {
     ankerl::unordered_dense::map<std::string, uint16_t> _locates;
 
     SystemEventSequence _systemEventSequenceTracker;
+
+    const std::string SHARED_MANAGER = "shard manager";
+    std::shared_ptr<spdlog::logger> sharedManagerLogger;
 
     template<size_t... I>
     static std::array<queue_type, numberOfShards> make_queues(std::index_sequence<I...>) {
