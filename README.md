@@ -87,6 +87,14 @@ The build uses `-march=native`, so binaries are optimized for the machine they'r
 
 Sample data is available from Nasdaq's [ITCH data archive](https://emi.nasdaq.com/ITCH/Nasdaq%20ITCH/01302019.NASDAQ_ITCH50.gz). Download and decompress it into `ITCHFiles/` at the project root.
 
+## Testing
+
+```bash
+./buildAndRunTests.sh      # or ./buildTests.sh, then ./runTests.sh
+```
+
+Unit tests for VWAP, TWAP and Realized Variance, plus replays of ITCH-style trade streams checked against an independent Python oracle. No ITCH file is needed. Details in [tests/README.md](tests/README.md); the metric definitions are in [METRICS.md](METRICS.md).
+
 ## CLI Options
 
 | Flag | Description | Default |

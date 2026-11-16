@@ -21,3 +21,9 @@ add_subdirectory(lib/unordered_dense)
 
 add_subdirectory(src)
 
+option(BUILD_TESTING "Build the metric tests (run with ctest)" ON)
+if(BUILD_TESTING)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
+
